@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Random Student Selector</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: radial-gradient(circle at 15% 20%, #2dd4bf 0, #2563eb 28%, #0f172a 70%);
+      --card: rgba(12, 18, 34, 0.7);
+      --border: rgba(255, 255, 255, 0.12);
+      --text: #e7efff;
+      --muted: #9fb3c8;
+      --accent: #fcd34d;
+      --accent-strong: #f59e0b;
+      --glass: rgba(255, 255, 255, 0.06);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Manrope', system-ui, -apple-system, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      padding: 32px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .glow {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at 70% 10%, rgba(252, 211, 77, 0.12), transparent 35%),
+                  radial-gradient(circle at 10% 80%, rgba(56, 189, 248, 0.14), transparent 45%);
+      filter: blur(30px);
+    }
+
+    .shell {
+      width: min(1100px, 100%);
+      display: grid;
+      gap: 20px;
+      grid-template-columns: 1.1fr 0.9fr;
+      align-items: stretch;
+      position: relative;
+      z-index: 2;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 32px;
+      box-shadow:
+        0 30px 80px rgba(0, 0, 0, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    h1 {
+      margin: 0 0 12px 0;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .sub {
+      margin: 0 0 28px 0;
+      color: var(--muted);
+    }
+
+    #winner {
+      font-size: clamp(32px, 5vw, 48px);
+      font-weight: 700;
+      margin: 12px 0 8px;
+      min-height: 56px;
+      display: flex;
+      align-items: center;
+    }
+
+    .tagline {
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    button {
+      border: none;
+      cursor: pointer;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      padding: 14px 24px;
+      border-radius: 12px;
+      color: #0b1220;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      box-shadow: 0 12px 25px rgba(245, 158, 11, 0.35);
+      transition: transform 140ms ease, box-shadow 140ms ease, opacity 120ms ease;
+    }
+    button:active { transform: translateY(1px); }
+    button:hover:not(:disabled) { box-shadow: 0 16px 32px rgba(245, 158, 11, 0.4); }
+    button:disabled { opacity: 0.7; cursor: progress; }
+
+    .pill {
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .link-btn {
+      text-decoration: none;
+      display: inline-block;
+      border: 1px dashed var(--border);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text);
+    }
+
+    .tape {
+      margin: 6px 0 10px;
+      height: 54px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--glass);
+      position: relative;
+    }
+    .tape::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(15,23,42,0.35), transparent 35%, transparent 65%, rgba(15,23,42,0.35));
+      pointer-events: none;
+    }
+    .tape-inner {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 8px 14px;
+      transform: translateY(0);
+    }
+    .tape-row {
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      color: var(--text);
+      opacity: 0.9;
+      white-space: nowrap;
+    }
+
+    .roster {
+      overflow: hidden;
+    }
+    .roster h3 {
+      margin: 0 0 14px 0;
+      font-size: 18px;
+      letter-spacing: 0.01em;
+    }
+    .list {
+      max-height: 480px;
+      overflow-y: auto;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.04);
+      scroll-behavior: smooth;
+      scrollbar-width: none;       /* Firefox */
+      -ms-overflow-style: none;    /* IE/Edge */
+    }
+    .list::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+    .list li {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      color: var(--text);
+      transition: background 120ms ease, transform 120ms ease, box-shadow 120ms ease;
+    }
+    .list li:last-child { border-bottom: none; }
+    .badge {
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      background: rgba(252, 211, 77, 0.16);
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .name {
+      flex: 1;
+      font-weight: 600;
+    }
+
+    .list li.rolling {
+      background: rgba(59, 130, 246, 0.12);
+      transform: translateX(6px);
+    }
+    .list li.winner {
+      background: linear-gradient(135deg, rgba(252, 211, 77, 0.28), rgba(245, 158, 11, 0.18));
+      box-shadow: 0 10px 30px rgba(245, 158, 11, 0.35);
+      transform: scale(1.01);
+    }
+
+    /* Popup */
+    .popup {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 220ms ease;
+      z-index: 5;
+    }
+    .popup.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .popup-card {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      padding: 28px 32px;
+      border-radius: 18px;
+      box-shadow: 0 25px 80px rgba(0, 0, 0, 0.35);
+      text-align: center;
+      transform: translateY(12px);
+      transition: transform 220ms ease;
+    }
+    .popup.show .popup-card { transform: translateY(0); }
+    .pop-label { color: var(--muted); margin-bottom: 10px; letter-spacing: 0.04em; text-transform: uppercase; font-weight: 700; }
+    .pop-name { font-size: 30px; font-weight: 800; margin-bottom: 6px; }
+    .pop-sub { color: var(--muted); margin: 0 0 18px 0; }
+    .close {
+      background: linear-gradient(135deg, #34d399, #10b981);
+      color: #04231a;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 20px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 10px 24px rgba(16, 185, 129, 0.32);
+    }
+
+    /* Confetti */
+    #confetti {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 6;
+    }
+    .confetti-piece {
+      position: absolute;
+      width: 8px;
+      height: 14px;
+      top: -10px;
+      left: var(--l);
+      background: var(--c);
+      opacity: 0.9;
+      transform: rotate(12deg);
+      animation: fall var(--r, 2s) linear forwards;
+      animation-delay: var(--d, 0s);
+    }
+    @keyframes fall {
+      to { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+    }
+
+    @media (max-width: 920px) {
+      .shell { grid-template-columns: 1fr; }
+      .list { max-height: 280px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="glow"></div>
+  <div class="shell">
+    <section class="card">
+      <h1>Random Student Selector</h1>
+      <p class="sub">Ek click pe fair draw - sabka number aayega!</p>
+      <div class="pill">Live shuffle</div>
+      <div class="tape" id="tape">
+        <div class="tape-inner" id="tape-inner"></div>
+      </div>
+      <div id="winner">Click Generate</div>
+      <p class="tagline">Naam scroll hote rahenge, ek dum se stop!</p>
+      <div class="actions">
+        <button id="btn" onclick="pick()">Generate</button>
+        <div class="pill" id="count">Total: {{ students|length }}</div>
+        <a class="pill link-btn" href="{{ url_for('upload') }}">Upload CSV</a>
+      </div>
+    </section>
+
+    <aside class="card roster">
+      <h3>Student List</h3>
+      <ul class="list" id="roster">
+        {% for student in students %}
+          <li>
+            <div class="badge">{{ student.roll }}</div>
+            <div class="name">{{ student.name }}</div>
+          </li>
+        {% endfor %}
+      </ul>
+    </aside>
+  </div>
+
+  <div id="popup" class="popup">
+    <div class="popup-card">
+      <div class="pop-label">Winner announced</div>
+      <div class="pop-name" id="pop-name">---</div>
+      <p class="pop-sub">Congrats! Class ka star of the draw.</p>
+      <button class="close" onclick="closePopup()">Okay</button>
+    </div>
+  </div>
+  <div id="confetti"></div>
+
+  <script>
+    const rosterEl = document.getElementById("roster");
+    const rows = Array.from(rosterEl.querySelectorAll("li")).map(li => {
+      const roll = parseInt(li.querySelector(".badge").textContent, 10);
+      li.dataset.roll = roll;
+      return li;
+    });
+
+    const tape = document.getElementById("tape");
+    const tapeInner = document.getElementById("tape-inner");
+    const winnerEl = document.getElementById("winner");
+    const btn = document.getElementById("btn");
+    const popup = document.getElementById("popup");
+    const popName = document.getElementById("pop-name");
+    const confettiLayer = document.getElementById("confetti");
+
+    let spinTimer = null;
+    let tapeTimer = null;
+    let tapePos = 0;
+
+    function buildTapeContent() {
+      const names = rows.map(r => `${r.dataset.roll} — ${r.querySelector(".name").textContent}`);
+      const dup = [...names, ...names];
+      tapeInner.innerHTML = dup.map(n => `<div class="tape-row">${n}</div>`).join("");
+      tapeInner.style.transform = "translateY(0)";
+      tapePos = 0;
+    }
+
+    function startTape() {
+      stopTape();
+      buildTapeContent();
+      const maxScroll = tapeInner.scrollHeight / 2;
+      tapeTimer = setInterval(() => {
+        tapePos += 2; // speed
+        if (tapePos >= maxScroll) tapePos = 0;
+        tapeInner.style.transform = `translateY(-${tapePos}px)`;
+      }, 16);
+      tape.classList.add("playing");
+    }
+
+    function stopTape(winnerRoll) {
+      if (tapeTimer) {
+        clearInterval(tapeTimer);
+        tapeTimer = null;
+      }
+      tape.classList.remove("playing");
+      if (!winnerRoll) return;
+      const winnerIndex = rows.findIndex(r => Number(r.dataset.roll) === Number(winnerRoll));
+      if (winnerIndex >= 0 && tapeInner.firstElementChild) {
+        const rowH = tapeInner.firstElementChild.getBoundingClientRect().height + 6; // gap
+        tapePos = winnerIndex * rowH;
+        tapeInner.style.transform = `translateY(-${tapePos}px)`;
+      }
+    }
+
+    function startSpin() {
+      stopSpin(false);
+      let i = 0;
+      spinTimer = setInterval(() => {
+        rows.forEach(r => r.classList.remove("rolling"));
+        const row = rows[i % rows.length];
+        row.classList.add("rolling");
+        rosterEl.scrollTo({ top: row.offsetTop - rosterEl.clientHeight / 2 + row.clientHeight, behavior: "smooth" });
+        i++;
+      }, 70);
+    }
+
+    function stopSpin(winnerRoll) {
+      if (spinTimer) {
+        clearInterval(spinTimer);
+        spinTimer = null;
+      }
+      rows.forEach(r => r.classList.remove("rolling", "winner"));
+      if (!winnerRoll) return;
+      const row = rows.find(r => Number(r.dataset.roll) === Number(winnerRoll));
+      if (row) {
+        row.classList.add("winner");
+        rosterEl.scrollTo({ top: row.offsetTop - rosterEl.clientHeight / 2 + row.clientHeight, behavior: "smooth" });
+      }
+    }
+
+    function confettiBurst() {
+      confettiLayer.innerHTML = "";
+      const colors = ["#fcd34d", "#f472b6", "#60a5fa", "#34d399", "#f97316"];
+      for (let i = 0; i < 140; i++) {
+        const p = document.createElement("span");
+        p.className = "confetti-piece";
+        p.style.setProperty("--l", `${Math.random() * 100}%`);
+        p.style.setProperty("--d", `${Math.random() * 0.8}s`);
+        p.style.setProperty("--r", `${1.6 + Math.random() * 1.6}s`);
+        p.style.setProperty("--c", colors[i % colors.length]);
+        confettiLayer.appendChild(p);
+        setTimeout(() => p.remove(), 2600);
+      }
+    }
+
+    function showPopup(name, roll) {
+      popName.textContent = `${roll} — ${name}`;
+      popup.classList.add("show");
+      confettiBurst();
+    }
+
+    function closePopup() {
+      popup.classList.remove("show");
+    }
+
+    async function pick() {
+      btn.disabled = true;
+      btn.textContent = "Shuffling...";
+      winnerEl.textContent = "Naam ghoom rahe hain...";
+      startTape();
+      startSpin();
+      try {
+        const res = await fetch("/pick");
+        const data = await res.json();
+        setTimeout(() => {
+          stopSpin(data.roll);
+          stopTape(data.roll);
+          winnerEl.textContent = `${data.roll} — ${data.name}`;
+          showPopup(data.name, data.roll);
+          btn.disabled = false;
+          btn.textContent = "Generate";
+        }, 1100);
+      } catch (e) {
+        stopSpin(false);
+        stopTape(false);
+        winnerEl.textContent = "Error fetching student";
+        btn.disabled = false;
+        btn.textContent = "Generate";
+      }
+    }
+
+    // Initialize tape with names visible even before shuffle.
+    buildTapeContent();
+  </script>
+</body>
+</html>
